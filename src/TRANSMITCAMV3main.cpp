@@ -84,7 +84,7 @@ static void wifiTuneSTA_LongRange() {
   // Force 11b for range/robustness (slower)
   esp_wifi_set_protocol(WIFI_IF_STA, WIFI_PROTOCOL_11B);
 
-  Serial.println("✅ TX range mode: 11b + HT20 + max TX power");
+  Serial.println("TX range mode: 11b + HT20 + max TX power");
 }
 
 static bool initCameraRangeFriendly() {
@@ -122,11 +122,11 @@ static bool initCameraRangeFriendly() {
 
   esp_err_t err = esp_camera_init(&config);
   if (err != ESP_OK) {
-    Serial.printf("❌ Camera init failed: 0x%x\n", err);
+    Serial.printf("Camera init failed: 0x%x\n", err);
     return false;
   }
 
-  Serial.printf("✅ Camera initialized (UXGA q=%d fb_count=%d)\n", config.jpeg_quality, config.fb_count);
+  Serial.printf("Camera initialized (UXGA q=%d fb_count=%d)\n", config.jpeg_quality, config.fb_count);
   return true;
 }
 
@@ -171,18 +171,18 @@ static void taskCapture(void* pv) {
 
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
-      Serial.println("❌ Capture failed");
+      Serial.println("Capture failed");
       vTaskDelay(pdMS_TO_TICKS(500));
       continue;
     }
 
     uint32_t len = fb->len;
-    Serial.printf("📸 img=%lu len=%lu bytes\n", (unsigned long)img_id, (unsigned long)len);
+    Serial.printf("img=%lu len=%lu bytes\n", (unsigned long)img_id, (unsigned long)len);
 
     uint8_t* bufUDP = (uint8_t*)ps_malloc(len);
 
     if (!bufUDP) {
-      Serial.println("❌ PSRAM alloc failed (drop frame)");
+      Serial.println("PSRAM alloc failed (drop frame)");
       esp_camera_fb_return(fb);
       vTaskDelay(pdMS_TO_TICKS(CAPTURE_INTERVAL_MS));
       continue;
@@ -195,7 +195,7 @@ static void taskCapture(void* pv) {
 
     if (xQueueSend(qUDP, &b, 0) != pdTRUE) {
       free(bufUDP);
-      Serial.println("⚠️ qUDP full: dropped UDP frame");
+      Serial.println("qUDP full: dropped UDP frame");
     }
 
     vTaskDelay(pdMS_TO_TICKS(CAPTURE_INTERVAL_MS));
@@ -214,7 +214,7 @@ static void taskUDP(void* pv) {
     if (xQueueReceive(qUDP, &it, portMAX_DELAY) == pdTRUE) {
 
       if (WiFi.status() != WL_CONNECTED) {
-        Serial.println("⚠️ WiFi not connected; dropped UDP frame");
+        Serial.println("WiFi not connected; dropped UDP frame");
         free(it.buf);
         continue;
       }
@@ -234,7 +234,7 @@ static void taskUDP(void* pv) {
       for (int i = 0; i < count; i++) avg += hist[i];
       avg /= (float)count;
 
-      Serial.printf("📡 TX img=%lu bytes=%lu dt=%lums thr=%.2f Mbps avg=%.2f Mbps\n",
+      Serial.printf("TX img=%lu bytes=%lu dt=%lums thr=%.2f Mbps avg=%.2f Mbps\n",
                     (unsigned long)it.img_id,
                     (unsigned long)it.len,
                     (unsigned long)dt,
@@ -247,7 +247,7 @@ static void taskUDP(void* pv) {
         lastInfoMs = now;
         int rssi = WiFi.RSSI();
         float d_m = estimateDistanceMetersFromRssi(rssi);
-        Serial.printf("📶 TX RSSI=%d dBm | estDist=%.1f m (VERY rough)\n", rssi, d_m);
+        Serial.printf("TX RSSI=%d dBm | estDist=%.1f m (VERY rough)\n", rssi, d_m);
       }
     }
   }
@@ -264,7 +264,7 @@ void setup() {
                 psramFound() ? "YES" : "NO", (unsigned)ESP.getPsramSize());
 
   if (!initCameraRangeFriendly()) {
-    Serial.println("❌ Camera init failed");
+    Serial.println("Camera init failed");
     while (true) delay(1000);
   }
 
@@ -278,7 +278,7 @@ void setup() {
     delay(250);
   }
 
-  Serial.println("\n✅ Connected");
+  Serial.println("\n WiFi Connected");
   Serial.print("TX IP: ");
   Serial.println(WiFi.localIP());
 
@@ -286,14 +286,14 @@ void setup() {
 
   qUDP = xQueueCreate(2, sizeof(FrameItem));
   if (!qUDP) {
-    Serial.println("❌ Queue create failed");
+    Serial.println("Queue create failed");
     while (true) delay(1000);
   }
 
   xTaskCreatePinnedToCore(taskCapture, "capture", 8192, nullptr, 3, nullptr, 1);
   xTaskCreatePinnedToCore(taskUDP,     "udp",     8192, nullptr, 2, nullptr, 0);
 
-  Serial.printf("✅ TX started (UDP only) | FB_COUNT=%d\n", FB_COUNT);
+  Serial.printf("TX started (UDP only) | FB_COUNT=%d\n", FB_COUNT);
 }
 
 void loop() {
